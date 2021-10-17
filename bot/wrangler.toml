@@ -1,0 +1,30 @@
+name = "royal-tree-18ea"
+type = "javascript"
+workers_dev = true
+compatibility_date = "2021-10-15" # required
+compatibility_flags = [ "formdata_parser_supports_files" ] # required
+
+kv_namespaces = [
+	{ binding = "LOGINS", id = "76e041990b7546dcad65fadd2b3424e7", preview_id = "76e041990b7546dcad65fadd2b3424e7" }
+]
+
+[vars]
+WORKERS_RS_VERSION = "0.0.6"
+DISCORD_PUBLIC_KEY = "4980c8d3e3137f083c2c233ed18fd64b382da300bf40a9a51ffb45cee6eec519"
+EVE_CLIENT_ID = "c885445c5a944ae487ff6bf84b18c296"
+MEILISEARCH_API_URL = "https://search.wnelson.dev"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release" # required
+
+[build.upload]
+dir    = "build/worker"
+format = "modules"
+main   = "./shim.mjs"
+
+[[build.upload.rules]]
+globs = ["**/*.wasm"]
+type  = "CompiledWasm"
+
+# read more about configuring your Worker via wrangler.toml at:
+# https://developers.cloudflare.com/workers/cli-wrangler/configuration
