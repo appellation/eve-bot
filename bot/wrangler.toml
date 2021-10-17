@@ -26,5 +26,12 @@ main   = "./shim.mjs"
 globs = ["**/*.wasm"]
 type  = "CompiledWasm"
 
+# Prod
+[env.prod]
+name = "eve-bot"
+
+[env.prod.vars]
+DISCORD_PUBLIC_KEY = "1031badede433c9f79230319e77659709f6ca57d5249e5ff11adbf5b991c3ac8"
+
 # read more about configuring your Worker via wrangler.toml at:
 # https://developers.cloudflare.com/workers/cli-wrangler/configuration
