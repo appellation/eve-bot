@@ -4,6 +4,7 @@ use worker::{
 };
 
 mod constants;
+mod interactions;
 mod routes;
 mod search;
 mod utils;
