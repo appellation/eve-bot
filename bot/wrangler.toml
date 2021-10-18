@@ -31,7 +31,10 @@ type  = "CompiledWasm"
 name = "eve-bot"
 
 [env.prod.vars]
+WORKERS_RS_VERSION = "0.0.6"
 DISCORD_PUBLIC_KEY = "1031badede433c9f79230319e77659709f6ca57d5249e5ff11adbf5b991c3ac8"
+EVE_CLIENT_ID = "c885445c5a944ae487ff6bf84b18c296"
+MEILISEARCH_API_URL = "https://search.wnelson.dev"
 
 # read more about configuring your Worker via wrangler.toml at:
 # https://developers.cloudflare.com/workers/cli-wrangler/configuration
