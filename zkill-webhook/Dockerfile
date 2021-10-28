@@ -11,4 +11,6 @@ FROM alpine
 COPY --from=build /usr/local/cargo/bin/zkill-webhook /usr/local/bin/zkill-webhook
 RUN ls /usr/local/bin
 
+EXPOSE 3000
+
 CMD ["zkill-webhook"]
