@@ -1,4 +1,4 @@
-use std::{net::SocketAddr, str::from_utf8};
+use std::{env, net::SocketAddr, str::from_utf8};
 
 use anyhow::Result;
 use async_tungstenite::{tokio::connect_async, tungstenite::Message};
@@ -19,7 +19,8 @@ struct State {
 
 async fn send_message(state: State, key: IVec, data: Bytes) -> Result<()> {
 	let url = from_utf8(&key)?;
-	let result = state.client
+	let result = state
+		.client
 		.post(url)
 		.body(data)
 		.send()
@@ -63,10 +64,7 @@ async fn run_ws(state: State) -> Result<()> {
 }
 
 async fn register_webhook(state: Extension<State>, body: String) {
-	state
-		.db
-		.insert(body.as_str(), IVec::default())
-		.unwrap();
+	state.db.insert(body.as_str(), IVec::default()).unwrap();
 }
 
 #[tokio::main]
@@ -91,7 +89,13 @@ async fn main() -> Result<()> {
 		.layer(TraceLayer::new_for_http())
 		.layer(AddExtensionLayer::new(state));
 
-	let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+	let addr = SocketAddr::from((
+		[0, 0, 0, 0],
+		env::var("PORT")
+			.ok()
+			.and_then(|port| port.parse().ok())
+			.unwrap_or(3000),
+	));
 
 	axum::Server::bind(&addr)
 		.serve(app.into_make_service())
