@@ -1,0 +1,19 @@
+alerts:
+- rule: DEPLOYMENT_FAILED
+- rule: DOMAIN_FAILED
+name: zkill-webhook
+region: nyc
+services:
+- dockerfile_path: Dockerfile
+  github:
+    branch: main
+    deploy_on_push: true
+    repo: appellation/eve-bot
+  http_port: 3000
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  name: zkill-webhook
+  routes:
+  - path: /
+  source_dir: /zkill-webhook
+  dockerfile_path: zkill-webhook/Dockerfile
