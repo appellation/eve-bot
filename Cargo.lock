@@ -1622,6 +1622,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "sled-ext"
+version = "0.1.0"
+dependencies = [
+ "sled",
+]
+
+[[package]]
 name = "sluice"
 version = "0.5.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2340,6 +2347,7 @@ dependencies = [
  "serde",
  "serde_json",
  "sled",
+ "sled-ext",
  "tokio",
  "tower",
  "tower-http",

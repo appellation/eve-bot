@@ -1,6 +1,6 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
-use anyhow::Result;
+use anyhow::{Error, Result};
 use async_tungstenite::{tokio::connect_async, tungstenite::Message};
 use axum::{
 	extract::Extension,
@@ -8,19 +8,17 @@ use axum::{
 	http::{HeaderMap, HeaderValue},
 	AddExtensionLayer, Json, Router,
 };
-use futures::prelude::*;
+use futures::{future::try_join_all, prelude::*};
 use model::{zkb::Killmail, Filters, Format, Subscription, Subscriptions};
-use prelude::Stored;
 use reqwest::{Client, StatusCode};
 use serde_json::{from_slice, from_str, to_vec};
 use sled::Tree;
+use sled_ext::key::Key;
 use tokio::spawn;
 use tower_http::trace::TraceLayer;
 use tracing::log::{error, warn};
 
-mod data;
 mod model;
-mod prelude;
 
 #[derive(Debug, Clone)]
 struct State {
@@ -28,7 +26,12 @@ struct State {
 	pub tree: Tree,
 }
 
-async fn send_message(state: State, sub: Subscription, km: impl AsRef<Killmail>) -> Result<()> {
+/// Send a message to the subscription with the killmail contents. Returns the subscription if it failed.
+async fn send_message(
+	state: State,
+	sub: Subscription,
+	km: impl AsRef<Killmail>,
+) -> Result<Option<Subscription>> {
 	let body = match sub.format {
 		Format::Discord => format!(r#"{{"content":"{}"}}"#, km.as_ref().zkb.url).into_bytes(),
 		Format::Raw => to_vec(km.as_ref())?,
@@ -37,7 +40,7 @@ async fn send_message(state: State, sub: Subscription, km: impl AsRef<Killmail>)
 	let mut headers = HeaderMap::with_capacity(1);
 	headers.insert("Content-Type", HeaderValue::from_static("application/json"));
 
-	let result = state
+	let res = state
 		.client
 		.post(&sub.webhook_url)
 		.body(body)
@@ -46,10 +49,51 @@ async fn send_message(state: State, sub: Subscription, km: impl AsRef<Killmail>)
 		.await
 		.and_then(|r| r.error_for_status());
 
-	if let Err(e) = result {
-		warn!("Error executing webhook: {}; removing", e);
-		// state.db.remove(key)?;
+	match res {
+		Err(e) => {
+			warn!("Error posting to webhook {}; removing", e);
+			Ok(Some(sub))
+		}
+		Ok(_response) => Ok(None),
 	}
+}
+
+async fn process_killmail(state: State, km: Killmail) -> Result<()> {
+	let filters = km.filters();
+	let km = Arc::new(km);
+
+	try_join_all(filters.into_iter().map(move |filter| {
+		let km = Arc::clone(&km);
+		let state = state.clone();
+
+		async move {
+			let subscriptions = filter.get(&state.tree)?.unwrap_or_default();
+
+			let msg_state = state.clone();
+			let failed = try_join_all(
+				subscriptions
+					.into_inner()
+					.into_iter()
+					.map(move |sub| send_message(msg_state.clone(), sub, Arc::clone(&km))),
+			)
+			.await?
+			.into_iter()
+			.filter_map(|sub| sub)
+			.collect::<Subscriptions>();
+
+			state.tree.transaction::<_, _, Error>(move |txn| {
+				let existing = filter.get(txn).unwrap().unwrap_or_default();
+
+				// TODO: avoid cloning
+				filter.insert(txn, existing.difference(&failed).cloned().collect()).unwrap();
+
+				Ok(())
+			}).unwrap();
+
+			Ok::<_, Error>(())
+		}
+	}))
+	.await?;
 
 	Ok(())
 }
@@ -73,30 +117,30 @@ async fn run_ws(state: State) -> Result<()> {
 			Message::Pong(_data) => continue,
 		};
 
-		let filters = km.filters();
-		let km = Arc::new(km);
-
-		for filter in filters {
-			let subscriptions = Subscriptions::from_tree(&state.tree, filter)?.unwrap_or_default();
-			for subscription in subscriptions {
-				spawn(send_message(state.clone(), subscription, Arc::clone(&km)));
-			}
-		}
+		spawn(process_killmail(state.clone(), km));
 	}
 
 	Ok(())
 }
 
 async fn register_webhook(state: Extension<State>, Json(body): Json<Filters>) -> StatusCode {
-	for (filter, sub) in body {
-		let res = sub.merge_into_tree(&state.tree, filter);
-		if let Err(e) = res {
-			error!("{:?}", e);
-			return StatusCode::INTERNAL_SERVER_ERROR;
-		}
-	}
+	let res = state
+		.tree
+		.transaction::<_, _, Error>(move |txn| {
+			for (filter, sub) in &body {
+				let mut existing = filter.get(txn).unwrap().unwrap_or_default();
+				existing.extend(sub.iter().cloned());
+				filter.insert(txn, existing).unwrap();
+			}
+			Ok(())
+		});
 
-	StatusCode::OK
+	if let Err(e) = &res {
+		error!("{}", e);
+		StatusCode::INTERNAL_SERVER_ERROR
+	} else {
+		StatusCode::NO_CONTENT
+	}
 }
 
 #[tokio::main]
@@ -105,7 +149,6 @@ async fn main() -> Result<()> {
 
 	let db = sled::open("data")?;
 	let tree = db.open_tree("webhooks")?;
-	tree.set_merge_operator(data::subscription_merge_operator);
 	let client = Client::new();
 	let state = State { tree, client };
 
