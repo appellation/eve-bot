@@ -1,7 +1,4 @@
-mod login;
-mod item;
-mod watch;
-
-pub use login::*;
-pub use item::*;
-pub use watch::*;
+pub mod alliance;
+pub mod item;
+pub mod login;
+pub mod watch;

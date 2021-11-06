@@ -49,14 +49,16 @@ pub async fn interaction<T>(mut req: Request, ctx: RouteContext<T>) -> worker::R
 	match interaction {
 		Interaction::Ping(_) => Response::from_json(&InteractionResponse::Pong),
 		Interaction::ApplicationCommand(interaction) => match interaction.data.name.as_str() {
-			command::LOGIN => interactions::login(req, ctx, &interaction).await,
-			command::ITEM => interactions::search(&interaction).await,
-			command::WATCH => interactions::watch(ctx, &interaction).await,
+			command::LOGIN => interactions::login::login(req, ctx, &interaction).await,
+			command::ITEM => interactions::item::search(&interaction).await,
+			command::WATCH => interactions::watch::watch(ctx, &interaction).await,
+			command::ALLIANCE => interactions::alliance::search(&interaction).await,
 			_ => Response::empty(),
 		},
 		Interaction::ApplicationCommandAutocomplete(interaction) => {
 			match interaction.data.name.as_str() {
-				command::ITEM => interactions::autocomplete(ctx, &interaction).await,
+				command::ITEM => interactions::item::autocomplete(ctx, &interaction).await,
+				command::ALLIANCE => interactions::alliance::autocomplete(&interaction).await,
 				_ => Response::empty(),
 			}
 		}

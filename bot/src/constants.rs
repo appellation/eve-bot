@@ -2,6 +2,7 @@ pub mod command {
 	pub const LOGIN: &'static str = "login";
 	pub const ITEM: &'static str = "item";
 	pub const WATCH: &'static str = "watch";
+	pub const ALLIANCE: &'static str = "alliance";
 }
 
 pub mod kv {
