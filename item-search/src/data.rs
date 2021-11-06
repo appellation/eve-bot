@@ -1,42 +1,68 @@
+use std::{marker::PhantomData, path::Path};
+
 use anyhow::Result;
 use csv::Reader;
-use meilisearch_sdk::document::Document;
-use serde::{Deserialize, Serialize};
+use meilisearch_sdk::{client::Client, document::Document, progress::Progress};
+use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct InvType {
-	#[serde(rename = "typeID")]
-	pub type_id: usize,
-	// pub group_id: usize,
-	pub type_name: String,
-	pub description: Option<String>,
-	// pub mass: Scientific,
-	// pub volume: Scientific,
-	// pub capacity: Scientific,
-	// pub portion_size: usize,
-	// #[serde(deserialize_with = "option_str::deserialize")]
-	// pub race_id: Option<usize>,
-	// pub base_price: Option<usize>,
-	// pub published: bool,
-	// pub market_group_id: Option<usize>,
-	// pub icon_id: Option<usize>,
-	// pub sound_id: Option<usize>,
-	// pub graphic_id: usize,
-}
+use self::types::InvType;
 
-impl Document for InvType {
-	type UIDType = usize;
+pub mod types;
 
-	fn get_uid(&self) -> &Self::UIDType {
-		&self.type_id
+trait Data
+where
+	Self: for<'de> Deserialize<'de>,
+{
+	fn read<P: AsRef<Path>>(path: P) -> Result<Vec<Self>> {
+		let mut reader = Reader::from_path(path)?;
+
+		Ok(reader
+			.deserialize::<Self>()
+			.collect::<Result<Vec<_>, _>>()?)
 	}
 }
 
-pub fn read_data() -> Result<Vec<InvType>> {
-	let mut reader = Reader::from_path("./data/invTypes.csv")?;
+impl<T> Data for T where T: for<'de> Deserialize<'de> {}
 
-	Ok(reader
-		.deserialize::<InvType>()
-		.collect::<Result<Vec<_>, _>>()?)
+pub struct SearchData<'a, T> {
+	search: &'a Search<T>,
+	data: Vec<T>,
 }
+
+impl<'a, T> SearchData<'a, T>
+where
+	T: Document,
+{
+	pub async fn insert(&self, client: &Client) -> Result<Progress> {
+		Ok(client
+			.get_or_create(self.search.index)
+			.await?
+			.add_documents(&self.data, self.search.primary_key)
+			.await?)
+	}
+}
+
+#[derive(Debug, Clone)]
+pub struct Search<T> {
+	pub index: &'static str,
+	pub primary_key: Option<&'static str>,
+	pub path: &'static str,
+	contents: PhantomData<T>,
+}
+
+impl<T> Search<T>
+where
+	T: for<'de> Deserialize<'de>,
+{
+	pub fn data(&self) -> Result<SearchData<T>> {
+		let data = T::read(self.path)?;
+		Ok(SearchData { search: self, data })
+	}
+}
+
+pub const TYPES_SEARCH: Search<InvType> = Search {
+	index: "types",
+	primary_key: Some("typeID"),
+	path: "./data/invTypes.csv",
+	contents: PhantomData,
+};

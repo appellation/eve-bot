@@ -2,16 +2,23 @@ use std::time::Duration;
 
 use indicatif::{ProgressBar, ProgressStyle};
 use meilisearch_sdk::{client::Client, progress::UpdateStatus};
+use structopt::StructOpt;
 use tokio::time::sleep;
 
-use crate::{config::CONFIG, data::read_data};
+use crate::{config::CONFIG, data::TYPES_SEARCH};
 
 mod config;
 mod data;
 
+#[derive(Debug, StructOpt)]
+struct Opt {
+	/// The search index to use.
+	index: String,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-	// let eve = eve_api::Client::default();
+	let opt = Opt::from_args();
 	let search = Client::new(CONFIG.search.api_url, CONFIG.search.api_keys.private);
 
 	let bar = ProgressBar::new(5)
@@ -23,16 +30,13 @@ async fn main() -> anyhow::Result<()> {
 		);
 	bar.enable_steady_tick(120);
 
-	let types = read_data()?;
-
 	bar.set_message("Uploading...");
 	bar.inc(1);
 
-	let progress = search
-		.get_or_create("types")
-		.await?
-		.add_documents(&types, Some("typeID"))
-		.await?;
+	let progress = match opt.index.as_str() {
+		"types" => TYPES_SEARCH.data()?.insert(&search).await?,
+		_ => panic!(),
+	};
 
 	bar.inc(1);
 
