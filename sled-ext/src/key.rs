@@ -1,4 +1,4 @@
-use sled::{IVec, transaction::UnabortableTransactionError};
+use sled::{transaction::UnabortableTransactionError, IVec};
 
 use crate::{tree::TreeLike, value::Value};
 

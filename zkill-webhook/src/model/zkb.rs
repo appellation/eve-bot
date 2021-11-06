@@ -31,7 +31,7 @@ impl Killmail {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Victim {
 	pub alliance_id: Option<usize>,
-	pub character_id: usize,
+	pub character_id: Option<usize>,
 	pub corporation_id: usize,
 	pub damage_taken: usize,
 	// pub items
@@ -48,10 +48,12 @@ impl Victim {
 			role: Role::Attacker,
 		}));
 
-		filters.push(Filter::Character(Involvement {
-			id: self.character_id,
-			role: Role::Attacker,
-		}));
+		if let Some(char_id) = self.character_id {
+			filters.push(Filter::Character(Involvement {
+				id: char_id,
+				role: Role::Attacker,
+			}));
+		}
 
 		if let Some(alliance_id) = self.alliance_id {
 			filters.push(Filter::Alliance(Involvement {

@@ -5,7 +5,8 @@ compatibility_date = "2021-10-15" # required
 compatibility_flags = [ "formdata_parser_supports_files" ] # required
 
 kv_namespaces = [
-	{ binding = "LOGINS", id = "76e041990b7546dcad65fadd2b3424e7", preview_id = "76e041990b7546dcad65fadd2b3424e7" }
+	{ binding = "LOGINS", id = "76e041990b7546dcad65fadd2b3424e7", preview_id = "76e041990b7546dcad65fadd2b3424e7" },
+	{ binding = "ZKILL_WEBHOOKS", id = "99b1ce1beea74507a3372a8001aa006a", preview_id = "99b1ce1beea74507a3372a8001aa006a" }
 ]
 
 [vars]

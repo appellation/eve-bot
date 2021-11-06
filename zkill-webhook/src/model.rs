@@ -14,7 +14,10 @@ use sled_ext::{key::Key, value::Value};
 
 pub mod zkb;
 
+// { { "hello": "world" }: { "foo": "bar" } }
+
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, Hash, Clone)]
+#[serde(tag = "type")]
 pub enum Filter {
 	All,
 	Character(Involvement),

@@ -51,6 +51,7 @@ pub async fn interaction<T>(mut req: Request, ctx: RouteContext<T>) -> worker::R
 		Interaction::ApplicationCommand(interaction) => match interaction.data.name.as_str() {
 			command::LOGIN => interactions::login(req, ctx, &interaction).await,
 			command::SEARCH => interactions::search(&interaction).await,
+			command::WATCH => interactions::watch(ctx, &interaction).await,
 			_ => Response::empty(),
 		},
 		Interaction::ApplicationCommandAutocomplete(interaction) => {

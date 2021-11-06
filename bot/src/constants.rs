@@ -1,11 +1,14 @@
 pub mod command {
 	pub const LOGIN: &'static str = "login";
 	pub const SEARCH: &'static str = "search";
+	pub const WATCH: &'static str = "watch";
 }
 
 pub mod kv {
 	pub const LOGINS: &'static str = "LOGINS";
 	pub const LOGINS_TTL: u64 = 60 * 5;
+
+	pub const ZKILL_WEBHOOKS: &'static str = "ZKILL_WEBHOOKS";
 }
 
 pub mod var {
