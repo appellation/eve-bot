@@ -27,6 +27,14 @@ main   = "./shim.mjs"
 globs = ["**/*.wasm"]
 type  = "CompiledWasm"
 
+[[migrations]]
+tag = "v1"
+new_classes = ["Zkill"]
+
+[[migrations]]
+tag = "v2"
+deleted_classes = ["Zkill"]
+
 # Prod
 [env.prod]
 name = "eve-bot"
