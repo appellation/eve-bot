@@ -847,6 +847,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "indexer"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "config_struct",
+ "csv",
+ "futures",
+ "indicatif",
+ "meilisearch-sdk",
+ "serde",
+ "structopt",
+ "tokio",
+]
+
+[[package]]
 name = "indexmap"
 version = "1.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2132,21 +2147,6 @@ dependencies = [
  "serde-value",
  "serde_repr",
  "tracing",
-]
-
-[[package]]
-name = "type_updater"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "config_struct",
- "csv",
- "futures",
- "indicatif",
- "meilisearch-sdk",
- "serde",
- "structopt",
- "tokio",
 ]
 
 [[package]]

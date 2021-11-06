@@ -1,7 +1,7 @@
 [workspace]
 members = [
 	"bot",
-	"item-search",
+	"indexer",
 	"sled-ext",
 	"zkill-webhook"
 ]
